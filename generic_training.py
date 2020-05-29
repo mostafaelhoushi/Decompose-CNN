@@ -41,39 +41,40 @@ def train(model, train_loader, val_loader, batch_size, criterion, optimizer, \
         old_accr = best_accr
 
     while True:
-        model.eval()
-
-        result = tuple(validate(model, batch_size, val_loader, topk, True))
-
-        # if the current accuracy is better than the best accuracy
-        if len(list(filter(lambda t: t[0] > t[1], zip(best_accr, result)))) == 0:
-            torch.save({
-            'params':model.state_dict(), \
-            'optim':optimizer.state_dict(), \
-            'epoch':num_epoch}, pname)
-
-        
-        with open(log, 'a') as f:
-            f.write(str(num_epoch) + \
-            ',' + ','.join([str(r) for r in result]) + '\n')
-
-        for i, r in enumerate(result):
-            if target_accr is None:
-                # if not converge, continue training
-                if r - old_accr[i] > err_margin[i]: break
-            elif target_accr[i] - r > err_margin[i]: break
-        else: 
-            with open(log, 'a') as f:
-                f.write(time.strftime('%b/%d/%Y %H:%M:%S', time.localtime()) + '\n')
-            break
-
-        # update the old accuracy to current accuracy
-        if target_accr is None:
-            old_accr = result
-
-        model.train()
-
         for e in range(epoch):
+            model.eval()
+    
+            result = tuple(validate(model, batch_size, val_loader, topk, True))
+    
+            # if the current accuracy is better than the best accuracy
+            if len(list(filter(lambda t: t[0] > t[1], zip(best_accr, result)))) == 0:
+                torch.save({
+                'params':model.state_dict(), \
+                'optim':optimizer.state_dict(), \
+                'epoch':num_epoch}, pname)
+    
+            
+            with open(log, 'a') as f:
+                f.write(str(num_epoch) + \
+                ',' + ','.join([str(r) for r in result]) + '\n')
+
+            if num_epoch % epoch == 0:    
+                for i, r in enumerate(result):
+                    if target_accr is None:
+                        # if not converge, continue training
+                        if r - old_accr[i] > err_margin[i]: break
+                    elif target_accr[i] - r > err_margin[i]: break
+                else: 
+                    with open(log, 'a') as f:
+                        f.write(time.strftime('%b/%d/%Y %H:%M:%S', time.localtime()) + '\n')
+                    break
+        
+                # update the old accuracy to current accuracy
+                if target_accr is None:
+                    old_accr = result
+    
+            model.train()
+    
             for i in topk:
                 meters[i].reset()
 

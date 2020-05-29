@@ -25,6 +25,8 @@ from decomp_alexnet import decomp_alexnet
 
 import argparse
 
+import bnutils
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--decomp', type=str, default='cp', \
     help='specify which decomposition to use (cp or tucker)')
@@ -41,6 +43,10 @@ parser.add_argument('-v', '--val', action='store_true', \
 parser.add_argument('-a', '--arch', type=str, default='resnet50',\
     help='network architecture to decompose')
 
+parser.add_argument('--freeze-weights', action='store_true')
+parser.add_argument('--freeze-biases', action='store_true')
+parser.add_argument('--freeze_beta', action='store_true')
+parser.add_argument('--freeze_gamma', action='store_true')
 
 def gen_loaders(path, BATCH_SIZE, NUM_WORKERS):
     # Data loading code
@@ -166,6 +172,15 @@ def main():
     criterion = nn.CrossEntropyLoss().cuda()
 
     train_args = OrderedDict()
+
+    if args.freeze_weights:
+        net = bnutils.freeze_weights(net)
+    if args.freeze_biases:
+        net = bnutils.freeze_biases(net)
+    if args.freeze_beta:
+        net = bnutils.freeze_beta(net)
+    if args.freeze_gamma:
+        net = bnutils.freeze_gamma(net)
 
     if not eval_mode:
         train_args['model'] = net
